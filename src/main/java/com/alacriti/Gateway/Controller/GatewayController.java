@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alacriti.Gateway.Entity.CardsInfo;
 import com.alacriti.Gateway.Entity.Merchant;
+import com.alacriti.Gateway.Entity.MerchantDto;
 import com.alacriti.Gateway.Entity.PaymentInfo;
 import com.alacriti.Gateway.Entity.PaymentStatus;
 import com.alacriti.Gateway.Service.GatewayServiceImp;
@@ -28,20 +29,20 @@ public class GatewayController {
 	private GatewayServiceImp service;
 
 	@PostMapping("/merchant/registration")
-	public String registerMerchant(@RequestBody Merchant merchant)
+	public ResponseEntity<Merchant> registerMerchant(@RequestBody Merchant merchant)
 	{
 		
-		return service.registerMerchant(merchant);
+		return ResponseEntity.status(HttpStatus.CREATED).body(service.registerMerchant(merchant));
 	}
 	
 	@PostMapping("/merchant/payment")
-	public String payment(@RequestBody PaymentInfo paymentInfo)
+	public PaymentStatus payment(@RequestBody PaymentInfo paymentInfo)
 	{
 		return service.payment(paymentInfo);
 	}
 	
 	@GetMapping("/merchant/paymentstatus/{pId}")
-	public String paymentStatus(@PathVariable("pId") int  pId)
+	public PaymentStatus paymentStatus(@PathVariable("pId") int  pId)
 	{
 		
 		return service.paymentStatus(pId);

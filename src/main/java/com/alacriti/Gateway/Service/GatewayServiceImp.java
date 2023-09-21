@@ -26,21 +26,21 @@ public class GatewayServiceImp implements GatewayService {
 	private PaymentStatusRepository statusRepo;
 
 	@Override
-	public String registerMerchant(Merchant merchant) {
+	public Merchant registerMerchant(Merchant merchant) {
 		Merchant merchantFindByName = merchantRepo.findByName(merchant.getName());
 		if (merchantFindByName == null) {
 			merchantRepo.save(merchant);
-//			return ResponseEntity.status(HttpStatus.CREATED).body(merchant);
-			return "--- Merchant registered Successfully, Your Merchant Id : " + merchant.getId() + "---";
+			return merchant;
+//			return "--- Merchant registered Successfully, Your Merchant Id : " + merchant.getId() + "---";
 		} else {
 //			return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).body(merchantFindByName);
-			return "--- Merchant Already Registered, Your Merchant Id : " + merchantFindByName.getId() + "---";
+			return merchant;
 		}
 
 	}
 
 	@Override
-	public String payment(PaymentInfo paymentInfo) {
+	public PaymentStatus payment(PaymentInfo paymentInfo) {
 
 		// Fetching the Merchant is Registered with Gateway or no
 		
@@ -78,8 +78,9 @@ public class GatewayServiceImp implements GatewayService {
 
 						statusRepo.save(paymentStatus);
 
-						return "--- Payment Id : " + paymentStatus.getId() + ", Payment of " + paymentAmount
-								+ " is Successfully ---";
+						return paymentStatus;
+//						return "--- Payment Id : " + paymentStatus.getId() + ", Payment of " + paymentAmount
+//								+ " is Successfully ---";
 					} else {
 						PaymentStatus paymentStatus = new PaymentStatus();
 						paymentStatus.setMerchantid(paymentInfo.getMerchantid());
@@ -87,32 +88,36 @@ public class GatewayServiceImp implements GatewayService {
 						paymentStatus.setStatus("DECLINED");
 						statusRepo.save(paymentStatus);
 						
-						return "--- Payment Id : " + paymentStatus.getId()
-								+ ", Payment Declined due to Insufficient Funds ---";
+						return paymentStatus;
+//						return "--- Payment Id : " + paymentStatus.getId()
+//								+ ", Payment Declined due to Insufficient Funds ---";
 					}
 				} else {
-					return "--- Merchant Not registered ---";
+					return new PaymentStatus();
+//					return "--- Merchant Not registered ---";
 				}
 			} else {
-				return "--- Enter Valid Amount (Greater than Rs.0) ---";
+				return new PaymentStatus();
+//				return "--- Enter Valid Amount (Greater than Rs.0) ---";
 			}
 
 		} else {
-			return "--- Card Details Not Found ---";
+			return new PaymentStatus();
+//			return "--- Card Details Not Found ---";
 		}
 
 	}
 
 	@Override
-	public String paymentStatus(int paymentId) {
+	public PaymentStatus paymentStatus(int paymentId) {
 		Optional<PaymentStatus> findById = statusRepo.findById(paymentId);
 		if (findById.isPresent()) {
 			PaymentStatus paymentStatus = findById.get();
-//			return paymentStatus;
-			return "--- Payment of  '" + paymentStatus.getAmount() + "'  is " + paymentStatus.getStatus()+" ---";
+			return paymentStatus;
+//			return "--- Payment of  '" + paymentStatus.getAmount() + "'  is " + paymentStatus.getStatus()+" ---";
 		} else {
-//			return paymentId;
-			return "--- Invalid PaymentId ---";
+			return null;
+//			return "--- Invalid PaymentId ---";
 		}
 	}
 
