@@ -32,10 +32,8 @@ public class GatewayServiceImp implements GatewayService {
 			merchantRepo.save(merchant);
 			return merchant;
 //			return "--- Merchant registered Successfully, Your Merchant Id : " + merchant.getId() + "---";
-		} else {
-//			return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).body(merchantFindByName);
-			return merchant;
-		}
+		} 
+		return null;
 
 	}
 

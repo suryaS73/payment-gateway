@@ -31,8 +31,11 @@ public class GatewayController {
 	@PostMapping("/merchant/registration")
 	public ResponseEntity<Merchant> registerMerchant(@RequestBody Merchant merchant)
 	{
-		
-		return ResponseEntity.status(HttpStatus.CREATED).body(service.registerMerchant(merchant));
+		Merchant registerMerchant = service.registerMerchant(merchant);
+		if (registerMerchant!=null) {
+			return ResponseEntity.status(HttpStatus.CREATED).body(registerMerchant);
+		}
+		return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).body(merchant);
 	}
 	
 	@PostMapping("/merchant/payment")
