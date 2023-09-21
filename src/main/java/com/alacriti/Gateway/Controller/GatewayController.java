@@ -39,16 +39,26 @@ public class GatewayController {
 	}
 	
 	@PostMapping("/merchant/payment")
-	public PaymentStatus payment(@RequestBody PaymentInfo paymentInfo)
+	public ResponseEntity<PaymentStatus> payment(@RequestBody PaymentInfo paymentInfo)
 	{
-		return service.payment(paymentInfo);
+		PaymentStatus payment = service.payment(paymentInfo);
+		if (payment.getStatus()=="SUCCESS") {
+			return ResponseEntity.status(HttpStatus.ACCEPTED).body(payment);
+		} else {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(payment);
+		}
 	}
 	
 	@GetMapping("/merchant/paymentstatus/{pId}")
-	public PaymentStatus paymentStatus(@PathVariable("pId") int  pId)
+	public ResponseEntity<PaymentStatus> paymentStatus(@PathVariable("pId") int  pId)
 	{
 		
-		return service.paymentStatus(pId);
+		PaymentStatus paymentStatus = service.paymentStatus(pId);
+		if (paymentStatus!=null) {
+			return ResponseEntity.status(HttpStatus.FOUND).body(paymentStatus);
+		} else {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(paymentStatus);
+		}
 //		if (paymentStatus!=null) {
 //			return ResponseEntity.status(HttpStatus.FOUND).body(paymentStatus);
 //		} else {
