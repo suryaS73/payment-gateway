@@ -29,7 +29,11 @@ public class GatewayServiceImp implements GatewayService {
 	public Merchant registerMerchant(Merchant merchant) {
 		Merchant merchantFindByName = merchantRepo.findByName(merchant.getName());
 		if (merchantFindByName == null) {
-			merchantRepo.save(merchant);
+			try {				
+				merchantRepo.save(merchant);
+			} catch (Exception e) {
+				
+			}
 			return merchant;
 //			return "--- Merchant registered Successfully, Your Merchant Id : " + merchant.getId() + "---";
 		} 

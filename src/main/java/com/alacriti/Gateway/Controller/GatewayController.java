@@ -45,7 +45,7 @@ public class GatewayController {
 		if (payment.getStatus()=="SUCCESS") {
 			return ResponseEntity.status(HttpStatus.ACCEPTED).body(payment);
 		} else {
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(payment);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payment);
 		}
 	}
 	
