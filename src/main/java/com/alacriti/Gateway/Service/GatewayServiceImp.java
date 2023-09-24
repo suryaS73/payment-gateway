@@ -12,6 +12,11 @@ import com.alacriti.Gateway.Entity.PaymentStatus;
 import com.alacriti.Gateway.Repository.CardsInfoRepository;
 import com.alacriti.Gateway.Repository.MerchantRepository;
 import com.alacriti.Gateway.Repository.PaymentStatusRepository;
+import com.alacriti.Gateway.exception.InsufficientAmountException;
+import com.alacriti.Gateway.exception.InvalidCardDetailsException;
+import com.alacriti.Gateway.exception.MerchantAlreadyRegisteredException;
+import com.alacriti.Gateway.exception.MerchantNotFoundException;
+import com.alacriti.Gateway.exception.PaymentIdNotFoundException;
 
 @Service
 public class GatewayServiceImp implements GatewayService {
@@ -27,18 +32,10 @@ public class GatewayServiceImp implements GatewayService {
 
 	@Override
 	public Merchant registerMerchant(Merchant merchant) {
-		try {
-			Merchant merchantFindByName = merchantRepo.findByName(merchant.getName());
-			if (merchantFindByName == null) {
-				merchantRepo.save(merchant);
-				return merchant;
-//				return "--- Merchant registered Successfully, Your Merchant Id : " + merchant.getId() + "---";
-			}
-			return null;
-		} catch (Exception e) {
-			return null;
+		if (merchantRepo.findByName(merchant.getName()) != null) {
+			throw new MerchantAlreadyRegisteredException("Merchant You entered is already Registered");
 		}
-
+		return merchantRepo.save(merchant);
 	}
 
 	@Override
@@ -48,73 +45,58 @@ public class GatewayServiceImp implements GatewayService {
 
 	}
 
-//	public CardsInfo checkCardDetailsIsValidOrNot() {
-//		
-//	}
-
-	public PaymentStatus checkMerchantIsRegisteredOrNot(PaymentInfo paymentInfo)
-	{
+	public PaymentStatus checkMerchantIsRegisteredOrNot(PaymentInfo paymentInfo) {
 		Optional<Merchant> findMerchantById = merchantRepo.findById(paymentInfo.getMerchantid());
-		if (findMerchantById.isPresent()) {
-			Merchant merchant = findMerchantById.get();
-			return checkCardDetailsIsValidOrNot(paymentInfo, merchant);
+
+		if (findMerchantById.isEmpty()) {
+			throw new MerchantNotFoundException("Merchant Not Found");
 		}
-		else {
-			PaymentStatus status =new PaymentStatus();
-			status.setStatus("Merchant is Not Registered with gateway");
-			return status;
-		}
+		return checkCardDetailsIsValidOrNot(paymentInfo, findMerchantById.get());
 	}
-	
-	public PaymentStatus checkPaymentAmountIsValidOrNot(PaymentInfo paymentInfo)
-	{
-		if (paymentInfo.getAmount()>=1) {
+
+	public PaymentStatus checkPaymentAmountIsValidOrNot(PaymentInfo paymentInfo) {
+		if (paymentInfo.getAmount() >= 1) {
 			return checkMerchantIsRegisteredOrNot(paymentInfo);
-			
+
 		} else {
-			PaymentStatus status =new PaymentStatus();
+			PaymentStatus status = new PaymentStatus();
 			status.setStatus("Enter Valid Amount (Greater Than 1)");
 			return status;
 		}
 	}
-	
-	public PaymentStatus checkCardDetailsIsValidOrNot(PaymentInfo paymentInfo,Merchant merchant)
-	{
+
+	public PaymentStatus checkCardDetailsIsValidOrNot(PaymentInfo paymentInfo, Merchant merchant) {
 		CardsInfo findByCardno = cardRepo.findByCardno(paymentInfo.getCardno());
-		if (findByCardno!=null) {
-			return updatePaymentStatus(findByCardno, merchant, paymentInfo.getAmount());
-		} else {
-			PaymentStatus status =new PaymentStatus();
-			status.setStatus("Card Details Not Found");
-			return status;
+		if (cardRepo.findByCardno(paymentInfo.getCardno()) == null) {
+			throw new InvalidCardDetailsException("Card Details Invalid Or Not Found");
 		}
+		return updatePaymentStatus(findByCardno, merchant, paymentInfo.getAmount());
 
 	}
-	
+
 	public PaymentStatus updatePaymentStatus(CardsInfo cardDetails, Merchant merchant, double paymentAmount) {
 		double avalibleBalance = cardDetails.getAvlbal();
-		if (paymentAmount <= avalibleBalance) {
 
-			cardDetails.setAvlbal(avalibleBalance - paymentAmount);
-			cardRepo.save(cardDetails);
-
-			merchant.setAccountbal(merchant.getAccountbal() + paymentAmount);
-			merchantRepo.save(merchant);
-
+		if (paymentAmount >= avalibleBalance) {
 			PaymentStatus paymentStatus = new PaymentStatus();
 			paymentStatus.setMerchantid(merchant.getId());
 			paymentStatus.setAmount(paymentAmount);
-			paymentStatus.setStatus("Payment SUCCESSFULL");
-
+			paymentStatus.setStatus("Payment DECLINED due to Insufficient Balance");
 			statusRepo.save(paymentStatus);
-
-			return paymentStatus;
-
+			throw new InsufficientAmountException("Insufficient Account Balance");
 		}
+
+		cardDetails.setAvlbal(avalibleBalance - paymentAmount);
+		cardRepo.save(cardDetails);
+
+		merchant.setAccountbal(merchant.getAccountbal() + paymentAmount);
+		merchantRepo.save(merchant);
+
 		PaymentStatus paymentStatus = new PaymentStatus();
 		paymentStatus.setMerchantid(merchant.getId());
 		paymentStatus.setAmount(paymentAmount);
-		paymentStatus.setStatus("Payment DECLINED due to Insufficient Balance");
+		paymentStatus.setStatus("Payment SUCCESSFULL");
+
 		statusRepo.save(paymentStatus);
 
 		return paymentStatus;
@@ -122,15 +104,11 @@ public class GatewayServiceImp implements GatewayService {
 
 	@Override
 	public PaymentStatus paymentStatus(int paymentId) {
-		Optional<PaymentStatus> findById = statusRepo.findById(paymentId);
-		if (findById.isPresent()) {
-			PaymentStatus paymentStatus = findById.get();
-			return paymentStatus;
-		} else {
-			PaymentStatus status =new PaymentStatus();
-			status.setStatus("Payment Not Found");
-			return status;
+
+		if (statusRepo.findById(paymentId).isEmpty()) {
+			throw new PaymentIdNotFoundException("Payment Id NOT_FOUND Or Invalid");
 		}
+		return statusRepo.findById(paymentId).get();
 	}
 
 }
