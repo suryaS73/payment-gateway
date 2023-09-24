@@ -17,10 +17,10 @@ public class GatewayExceptionHandler {
 		 GatewayException gatewayException = new GatewayException(
 				 merchantAlreadyRegisteredException.getMessage(),
 				 merchantAlreadyRegisteredException.getCause(),
-	                HttpStatus.ALREADY_REPORTED
+	                HttpStatus.CONFLICT
 	        );
 
-	        return new ResponseEntity<>(gatewayException, HttpStatus.ALREADY_REPORTED);
+	        return new ResponseEntity<>(gatewayException, HttpStatus.CONFLICT);
 	    }
 	 
 	 @ExceptionHandler(value = {InvalidCardDetailsException.class})
@@ -69,6 +69,19 @@ public class GatewayExceptionHandler {
 		 GatewayException gatewayException = new GatewayException(
 				 paymentIdNotFoundException.getMessage(),
 				 paymentIdNotFoundException.getCause(),
+	                HttpStatus.NOT_FOUND
+	        );
+
+	        return new ResponseEntity<>(gatewayException, HttpStatus.NOT_FOUND);
+	    }
+	 
+	 @ExceptionHandler(value = {NoPaymentsFound.class})
+	    public ResponseEntity<Object> handleNoPaymentsFound
+	            (NoPaymentsFound noPaymentsFound)
+	    {
+		 GatewayException gatewayException = new GatewayException(
+				 noPaymentsFound.getMessage(),
+				 noPaymentsFound.getCause(),
 	                HttpStatus.NOT_FOUND
 	        );
 

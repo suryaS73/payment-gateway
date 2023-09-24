@@ -16,6 +16,8 @@ public class PaymentStatus {
 	
 	private int merchantid;
 	
+	private String merchantName;
+	
 	private double amount;
 	
 	private String status;
@@ -25,13 +27,16 @@ public class PaymentStatus {
 		// TODO Auto-generated constructor stub
 	}
 
-	public PaymentStatus(int id, int merchantid, double amount, String status) {
+	
+	public PaymentStatus(int id, int merchantid, String merchantName, double amount, String status) {
 		super();
 		this.id = id;
 		this.merchantid = merchantid;
+		this.merchantName = merchantName;
 		this.amount = amount;
 		this.status = status;
 	}
+
 
 	public int getId() {
 		return id;
@@ -63,6 +68,14 @@ public class PaymentStatus {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getMerchantName() {
+		return merchantName;
+	}
+
+	public void setMerchantName(String merchantName) {
+		this.merchantName = merchantName;
 	}
 	
 	

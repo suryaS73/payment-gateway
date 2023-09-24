@@ -1,5 +1,7 @@
 package com.alacriti.Gateway.Controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,5 +44,12 @@ public class GatewayController {
 
 		return ResponseHandler.responseBuilder("Your Payment Details", HttpStatus.FOUND,
 				service.paymentStatus(paymentId));
+	}
+	
+	@GetMapping("/merchant/paymentslist/{merchantName}")
+	public ResponseEntity<Object> fetchPaymentListByMerchantPartialName(@PathVariable("merchantName") String merchantName)
+	{
+		return ResponseHandler.responseBuilder("Payment Details", HttpStatus.FOUND,
+				service.fetchPaymentByMerchantName(merchantName));
 	}
 }

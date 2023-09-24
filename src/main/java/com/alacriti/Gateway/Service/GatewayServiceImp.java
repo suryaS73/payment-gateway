@@ -1,5 +1,7 @@
 package com.alacriti.Gateway.Service;
 
+import java.sql.SQLRecoverableException;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,12 @@ public class GatewayServiceImp implements GatewayService {
 			throw new MerchantAlreadyRegisteredException("Merchant You entered is already Registered");
 		}
 		return merchantRepo.save(merchant);
+
+	}
+
+	private Exception SQLException() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
@@ -80,6 +88,7 @@ public class GatewayServiceImp implements GatewayService {
 		if (paymentAmount >= avalibleBalance) {
 			PaymentStatus paymentStatus = new PaymentStatus();
 			paymentStatus.setMerchantid(merchant.getId());
+			paymentStatus.setMerchantName(merchant.getName());
 			paymentStatus.setAmount(paymentAmount);
 			paymentStatus.setStatus("Payment DECLINED due to Insufficient Balance");
 			statusRepo.save(paymentStatus);
@@ -94,6 +103,7 @@ public class GatewayServiceImp implements GatewayService {
 
 		PaymentStatus paymentStatus = new PaymentStatus();
 		paymentStatus.setMerchantid(merchant.getId());
+		paymentStatus.setMerchantName(merchant.getName());
 		paymentStatus.setAmount(paymentAmount);
 		paymentStatus.setStatus("Payment SUCCESSFULL");
 
@@ -109,6 +119,15 @@ public class GatewayServiceImp implements GatewayService {
 			throw new PaymentIdNotFoundException("Payment Id NOT_FOUND Or Invalid");
 		}
 		return statusRepo.findById(paymentId).get();
+	}
+
+	@Override
+	public List<PaymentStatus> fetchPaymentByMerchantName(String merchantName) {
+		
+		if (statusRepo.findByMerchantPartialName(merchantName).isEmpty()) {
+			throw new PaymentIdNotFoundException("No Payments Found");
+		}
+		return statusRepo.findByMerchantPartialName(merchantName);
 	}
 
 }
