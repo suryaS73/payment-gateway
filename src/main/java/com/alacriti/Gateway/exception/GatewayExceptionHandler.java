@@ -1,5 +1,7 @@
 package com.alacriti.Gateway.exception;
 
+import java.net.ConnectException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -86,5 +88,18 @@ public class GatewayExceptionHandler {
 	        );
 
 	        return new ResponseEntity<>(gatewayException, HttpStatus.NOT_FOUND);
+	    }
+	 
+	 @ExceptionHandler(value = {ConnectException.class})
+	    public ResponseEntity<Object> handleNoPaymentsFound
+	            (ConnectException connectException)
+	    {
+		 GatewayException gatewayException = new GatewayException(
+				 connectException.getMessage(),
+				 connectException.getCause(),
+	                HttpStatus.INTERNAL_SERVER_ERROR
+	        );
+
+	        return new ResponseEntity<>(gatewayException, HttpStatus.INTERNAL_SERVER_ERROR);
 	    }
 }
