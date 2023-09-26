@@ -5,12 +5,12 @@ import org.springframework.http.HttpStatus;
 public class GatewayException {
 
 	private final String message;
-    private final Throwable throwable;
+    private final Object data;
     private final HttpStatus httpStatus;
 
-    public GatewayException(String message, Throwable throwable, HttpStatus httpStatus) {
+    public GatewayException(String message, Object data, HttpStatus httpStatus) {
         this.message = message;
-        this.throwable = throwable;
+        this.data = data;
         this.httpStatus = httpStatus;
     }
 
@@ -18,8 +18,8 @@ public class GatewayException {
         return message;
     }
 
-    public Throwable getThrowable() {
-        return throwable;
+    public Object getObject() {
+        return data;
     }
 
     public HttpStatus getHttpStatus() {

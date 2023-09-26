@@ -1,19 +1,26 @@
 package com.alacriti.Gateway.Service;
 
-import java.sql.SQLRecoverableException;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 
 import com.alacriti.Gateway.Entity.CardsInfo;
 import com.alacriti.Gateway.Entity.Merchant;
 import com.alacriti.Gateway.Entity.PaymentInfo;
 import com.alacriti.Gateway.Entity.PaymentStatus;
-import com.alacriti.Gateway.Repository.CardsInfoRepository;
-import com.alacriti.Gateway.Repository.MerchantRepository;
-import com.alacriti.Gateway.Repository.PaymentStatusRepository;
+import com.alacriti.Gateway.RowMapper.CardsInfoRowMapper;
+//import com.alacriti.Gateway.Repository.CardsInfoRepository;
+//import com.alacriti.Gateway.Repository.MerchantRepository;
+//import com.alacriti.Gateway.Repository.PaymentStatusRepository;
+import com.alacriti.Gateway.RowMapper.MerchantRowMapper;
+import com.alacriti.Gateway.RowMapper.PaymentStatusRowMapper;
 import com.alacriti.Gateway.exception.InsufficientAmountException;
 import com.alacriti.Gateway.exception.InvalidCardDetailsException;
 import com.alacriti.Gateway.exception.MerchantAlreadyRegisteredException;
@@ -24,26 +31,35 @@ import com.alacriti.Gateway.exception.PaymentIdNotFoundException;
 public class GatewayServiceImp implements GatewayService {
 
 	@Autowired
-	private MerchantRepository merchantRepo;
-
-	@Autowired
-	private CardsInfoRepository cardRepo;
-
-	@Autowired
-	private PaymentStatusRepository statusRepo;
+	JdbcTemplate jdbcTemplate;
 
 	@Override
 	public Merchant registerMerchant(Merchant merchant) {
-		if (merchantRepo.findByName(merchant.getName()) != null) {
-			throw new MerchantAlreadyRegisteredException("Merchant You entered is already Registered");
-		}
-		return merchantRepo.save(merchant);
+
+		return checkMerchantIsAlreadyPresentOrNot(merchant);
 
 	}
 
-	private Exception SQLException() {
-		// TODO Auto-generated method stub
-		return null;
+	public Merchant checkMerchantIsAlreadyPresentOrNot(Merchant merchant) {
+		String query = "select * from merchant where name =?";
+		RowMapper<Merchant> rm = new MerchantRowMapper();
+		List<Merchant> list = jdbcTemplate.query(query, rm, merchant.getName());
+
+		if (list.size() <= 0) {
+			String query1 = "insert into merchant(name,email,phone,accountbal) values(?,?,?,?)";
+			int update = jdbcTemplate.update(query1, merchant.getName(), merchant.getEmail(), merchant.getPhone(),
+					merchant.getAccountbal());
+
+			String queryGet = "select * from merchant where name=?";
+			RowMapper<Merchant> rm2 = new MerchantRowMapper();
+			List<Merchant> list2 = jdbcTemplate.query(queryGet, rm2, merchant.getName());
+
+			return list2.get(0);
+		}
+
+		throw new MerchantAlreadyRegisteredException(
+				"Merchant You entered is already Registered  with merchantId : " + list.get(0).getId(), list.get(0));
+
 	}
 
 	@Override
@@ -51,15 +67,6 @@ public class GatewayServiceImp implements GatewayService {
 
 		return checkPaymentAmountIsValidOrNot(paymentInfo);
 
-	}
-
-	public PaymentStatus checkMerchantIsRegisteredOrNot(PaymentInfo paymentInfo) {
-		Optional<Merchant> findMerchantById = merchantRepo.findById(paymentInfo.getMerchantid());
-
-		if (findMerchantById.isEmpty()) {
-			throw new MerchantNotFoundException("Merchant Not Found");
-		}
-		return checkCardDetailsIsValidOrNot(paymentInfo, findMerchantById.get());
 	}
 
 	public PaymentStatus checkPaymentAmountIsValidOrNot(PaymentInfo paymentInfo) {
@@ -73,61 +80,95 @@ public class GatewayServiceImp implements GatewayService {
 		}
 	}
 
+	public PaymentStatus checkMerchantIsRegisteredOrNot(PaymentInfo paymentInfo) {
+		String query = "select * from merchant where id =?";
+		RowMapper<Merchant> rm = new MerchantRowMapper();
+		List<Merchant> list = jdbcTemplate.query(query, rm, paymentInfo.getMerchantid());
+		if (list.isEmpty()) {
+			throw new MerchantNotFoundException("Merchant Not Found");
+		}
+		return checkCardDetailsIsValidOrNot(paymentInfo, list.get(0));
+	}
+
 	public PaymentStatus checkCardDetailsIsValidOrNot(PaymentInfo paymentInfo, Merchant merchant) {
-		CardsInfo findByCardno = cardRepo.findByCardno(paymentInfo.getCardno());
-		if (cardRepo.findByCardno(paymentInfo.getCardno()) == null) {
+		String query = "select * from cardsinfo where cardno =?";
+		RowMapper<CardsInfo> rm = new CardsInfoRowMapper();
+		List<CardsInfo> list = jdbcTemplate.query(query, rm, paymentInfo.getCardno());
+		if (list.isEmpty()) {
 			throw new InvalidCardDetailsException("Card Details Invalid Or Not Found");
 		}
-		return updatePaymentStatus(findByCardno, merchant, paymentInfo.getAmount());
+		return updatePaymentStatus(list.get(0), merchant, paymentInfo.getAmount());
 
 	}
 
 	public PaymentStatus updatePaymentStatus(CardsInfo cardDetails, Merchant merchant, double paymentAmount) {
 		double avalibleBalance = cardDetails.getAvlbal();
 
+		String queryForPaymentUpdate = "insert into paymentstatus(amount,merchantid,status,merchant_name) values(?,?,?,?)";
+
 		if (paymentAmount >= avalibleBalance) {
-			PaymentStatus paymentStatus = new PaymentStatus();
-			paymentStatus.setMerchantid(merchant.getId());
-			paymentStatus.setMerchantName(merchant.getName());
-			paymentStatus.setAmount(paymentAmount);
-			paymentStatus.setStatus("Payment DECLINED due to Insufficient Balance");
-			statusRepo.save(paymentStatus);
+
+			int update = jdbcTemplate.update(queryForPaymentUpdate, paymentAmount, merchant.getId(),
+					"Payment DECLINED due to Insufficient Balance", merchant.getName());
 			throw new InsufficientAmountException("Insufficient Account Balance");
 		}
 
-		cardDetails.setAvlbal(avalibleBalance - paymentAmount);
-		cardRepo.save(cardDetails);
+		String queryForCardInfo = "update  cardsinfo set avlbal=? where cardno=?";
 
-		merchant.setAccountbal(merchant.getAccountbal() + paymentAmount);
-		merchantRepo.save(merchant);
+		jdbcTemplate.update(queryForCardInfo, avalibleBalance - paymentAmount, cardDetails.getCardno());
 
-		PaymentStatus paymentStatus = new PaymentStatus();
-		paymentStatus.setMerchantid(merchant.getId());
-		paymentStatus.setMerchantName(merchant.getName());
-		paymentStatus.setAmount(paymentAmount);
-		paymentStatus.setStatus("Payment SUCCESSFULL");
+		String queryForMerchantAmountUpdate = "update  merchant set accountbal=? where id=?";
 
-		statusRepo.save(paymentStatus);
+		jdbcTemplate.update(queryForMerchantAmountUpdate, merchant.getAccountbal() + paymentAmount, merchant.getId());
 
-		return paymentStatus;
+		int paymentId;
+
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+
+		jdbcTemplate.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(queryForPaymentUpdate, Statement.RETURN_GENERATED_KEYS);
+			ps.setDouble(1, paymentAmount);
+			ps.setInt(2, merchant.getId());
+			ps.setString(3, "Payment SUCCESSFULL");
+			ps.setString(4, merchant.getName());
+			return ps;
+		}, keyHolder);
+
+		paymentId = keyHolder.getKey().intValue();
+
+		String queryToGetPaymentStatus = "select * from paymentstatus where id=?";
+		RowMapper<PaymentStatus> rm2 = new PaymentStatusRowMapper();
+		List<PaymentStatus> list2 = jdbcTemplate.query(queryToGetPaymentStatus, rm2, paymentId);
+
+		return list2.get(0);
+
 	}
 
 	@Override
 	public PaymentStatus paymentStatus(int paymentId) {
 
-		if (statusRepo.findById(paymentId).isEmpty()) {
+		String queryToGetPaymentStatus = "select * from paymentstatus where id=?";
+		RowMapper<PaymentStatus> rm2 = new PaymentStatusRowMapper();
+		List<PaymentStatus> list2 = jdbcTemplate.query(queryToGetPaymentStatus, rm2, paymentId);
+
+		if (list2.isEmpty()) {
 			throw new PaymentIdNotFoundException("Payment Id NOT_FOUND Or Invalid");
 		}
-		return statusRepo.findById(paymentId).get();
+
+		return list2.get(0);
 	}
 
 	@Override
 	public List<PaymentStatus> fetchPaymentByMerchantName(String merchantName) {
-		
-		if (statusRepo.findByMerchantPartialName(merchantName).isEmpty()) {
+
+		String queryToGetPaymentStatus = "select * from paymentstatus where merchant_name like ? ";
+		String pattern = "%" + merchantName + "%";
+		RowMapper<PaymentStatus> rm2 = new PaymentStatusRowMapper();
+		List<PaymentStatus> list2 = jdbcTemplate.query(queryToGetPaymentStatus, rm2, pattern);
+		if (list2.isEmpty()) {
 			throw new PaymentIdNotFoundException("No Payments Found");
 		}
-		return statusRepo.findByMerchantPartialName(merchantName);
+		return list2;
 	}
 
 }
