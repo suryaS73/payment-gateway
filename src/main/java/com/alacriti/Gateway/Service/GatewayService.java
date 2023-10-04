@@ -2,18 +2,36 @@ package com.alacriti.Gateway.Service;
 
 import java.util.List;
 
+import com.alacriti.Gateway.Entity.CardsInfo;
 import com.alacriti.Gateway.Entity.Merchant;
+import com.alacriti.Gateway.Entity.PaymentDetails;
 import com.alacriti.Gateway.Entity.PaymentInfo;
-import com.alacriti.Gateway.Entity.PaymentStatus;
 
 public interface GatewayService {
 
-	Merchant registerMerchant(Merchant merchant);
+	Merchant merchantRegistrationService(Merchant merchant);
 	
-	PaymentStatus payment(PaymentInfo paymentInfo);
+	Merchant findMerchantByName(String name);
 	
-	PaymentStatus paymentStatus(int paymentId);
+	Merchant findMerchatnByMerchantId(int merchatnId);
 	
-	List<PaymentStatus> fetchPaymentByMerchantName(String merchantName);
+	Merchant findMerchatnByEmail(String email);
+	
+	CardsInfo findCardDetailsByCardNO(String cardNo);
+	
+	PaymentDetails payment(PaymentInfo paymentInfo);
+	
+	PaymentDetails processThePayment(CardsInfo cardDetails, Merchant merchant, double paymentAmount);
+
+	PaymentDetails insertIntoPaymentsDetails(Merchant merchant,double paymentAmount,String cardNo,String paymentStatus);
+	
+	int updateCardsInfoAcountBalance(String cardNo,double paymentAmount,double avaliableBalance);
+	
+	int updateMerchantAcountBalance(int merchantId,double paymentAmount,double avaliableBalance);
+
+	PaymentDetails getPaymentDetailsByPaymentId(int paymentId);
+
+	
+	List<PaymentDetails> fetchPaymentsByMerchantName(String merchantName);
 
 }

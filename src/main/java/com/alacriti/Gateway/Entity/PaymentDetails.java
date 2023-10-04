@@ -8,27 +8,28 @@ package com.alacriti.Gateway.Entity;
 
 //@Entity
 //@Table(name = "paymentstatus")
-public class PaymentStatus {
-	
+public class PaymentDetails {
+
 //	@Id
 //	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
-	
+
 	private int merchantid;
-	
+
 	private String merchantName;
-	
+
+	private String cardNo;
+
 	private double amount;
-	
+
 	private String status;
 
-	public PaymentStatus() {
+	public PaymentDetails() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 
-	
-	public PaymentStatus(int id, int merchantid, String merchantName, double amount, String status) {
+	public PaymentDetails(int id, int merchantid, String merchantName, double amount, String status) {
 		super();
 		this.id = id;
 		this.merchantid = merchantid;
@@ -37,6 +38,13 @@ public class PaymentStatus {
 		this.status = status;
 	}
 
+	public String getCardNo() {
+		return cardNo;
+	}
+
+	public void setCardNo(String cardNo) {
+		this.cardNo = cardNo;
+	}
 
 	public int getId() {
 		return id;
@@ -77,7 +85,5 @@ public class PaymentStatus {
 	public void setMerchantName(String merchantName) {
 		this.merchantName = merchantName;
 	}
-	
-	
 
 }

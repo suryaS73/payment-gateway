@@ -5,7 +5,7 @@ import com.alacriti.Gateway.Entity.Merchant;
 public class MerchantAlreadyRegisteredException extends RuntimeException{
 
 	
-	 public MerchantAlreadyRegisteredException(String message,Merchant merchant) {
+	 public MerchantAlreadyRegisteredException(String message) {
 		 	super(message);			
 	    }
 
